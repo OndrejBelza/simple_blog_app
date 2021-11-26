@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import Category from "../interfaces/Category";
 import Post from "../interfaces/Post";
 import { Dialog } from "primereact/dialog";
@@ -11,38 +11,65 @@ import client from "../utils/client";
 interface NewPostDialogProps {
   categories: Category[];
   addNewPost: (post: Post) => void;
+  editPost: (post: Post) => void;
   onHide: () => void;
   visible: boolean;
+  action: "create" | "edit";
+  post: Post | undefined;
 }
 interface FormData {
-  title: string;
-  description: string;
-  categoryId: string;
+  title?: string;
+  description?: string;
+  categoryId?: string;
 }
 const NewPostDialog: FC<NewPostDialogProps> = ({
   categories,
   visible,
   addNewPost,
+  editPost,
   onHide,
+  action,
+  post,
 }) => {
   const [formData, setFormData] = useState<FormData>({
     title: "",
     description: "",
     categoryId: "",
   });
-  const addPostHandler = async () => {
-    console.log("cat", formData.categoryId);
 
-    const response = await client.post<Post>("posts", {
-      ...formData,
-    });
-    addNewPost(response.data);
-    onHide();
+  useEffect(() => {
+    if (visible)
+      setFormData({
+        title: post?.title,
+        description: post?.description,
+        categoryId: post?.categoryId,
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  const clearForm = () => {
     setFormData({
       title: "",
       description: "",
       categoryId: "",
     });
+  };
+  const handleAction = async () => {
+    if (action === "create") {
+      const response = await client.post<Post>("posts", {
+        ...formData,
+      });
+      addNewPost(response.data);
+      onHide();
+      clearForm();
+    } else {
+      const response = await client.put<Post>(`posts/${post?._id}`, {
+        ...formData,
+      });
+      editPost(response.data);
+      onHide();
+      clearForm();
+    }
   };
 
   const options = categories.map((c) => ({ name: c.name, code: c._id }));
@@ -54,9 +81,9 @@ const NewPostDialog: FC<NewPostDialogProps> = ({
         className="p-button-danger"
       />
       <Button
-        label="Add post"
+        label={action === "create" ? "Add post" : "Edit post"}
         className="p-button-success"
-        onClick={addPostHandler}
+        onClick={handleAction}
       />
     </>
   );

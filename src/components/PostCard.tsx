@@ -5,14 +5,27 @@ import { useAppSelector } from "../hooks/redux";
 import { selectUser } from "../store/reducers/userReducer";
 import { Button } from "primereact/button";
 import Category from "../interfaces/Category";
+import client from "../utils/client";
 
 interface PostCardProps {
   post: Post;
   categories: Category[];
+  removePost: (id: string) => void;
+  updatePost: (id: string) => void;
 }
 
-const PostCard: FC<PostCardProps> = ({ post, categories }) => {
+const PostCard: FC<PostCardProps> = ({
+  post,
+  categories,
+  removePost,
+  updatePost,
+}) => {
   const user = useAppSelector(selectUser);
+
+  const deletePost = async () => {
+    await client.delete(`posts/${post._id}`);
+    removePost(post._id);
+  };
 
   const category = (
     <>{categories.find((c) => c._id === post.categoryId)?.name}</>
@@ -27,6 +40,13 @@ const PostCard: FC<PostCardProps> = ({ post, categories }) => {
               label="Delete"
               icon="pi pi-times"
               className="p-button-danger"
+              onClick={deletePost}
+            />
+            <Button
+              label="Update"
+              icon="pi pi-pencil"
+              className="p-ml-2"
+              onClick={() => updatePost(post._id)}
             />
           </div>
         </>
